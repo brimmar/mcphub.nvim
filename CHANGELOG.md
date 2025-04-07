@@ -5,6 +5,146 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2025-04-05
+
+### Added
+
+- Added support for SSE (Server-Sent Events) MCP servers
+- Updated documentation with SSE server configuration examples
+- Updated required mcp-hub version to 2.1.0 for SSE support
+
+## [4.3.0] - 2025-04-04
+
+### Added
+
+- Added support for MCP server prompts capability
+- Added prompts as /slash_commands in CodeCompanion integration
+- Added audio content type support for responses
+- Added native server prompts support with role-based chat messages
+
+### Changed
+
+- Updated MCP Hub dependency to v2.0.1
+- Modified API calls to use new endpoint format where server name is passed in request body
+- Changed prompt rendering in base capabilities to support new format
+- Updated documentation with new prompts and slash commands features
+
+### Fixed
+
+- Fixed bug when viewing system prompt in UI
+- Fixed server logs re-rendering other views while still connected
+
+## [4.2.0] - 2025-04-02
+
+### Deprecated
+
+- Deprecated Avante's auto_approve_mcp_tool_calls setting in favor of global config.auto_approve
+- Deprecated CodeCompanion's opts.requires_approval setting in favor of global config.auto_approve
+
+### Added
+
+- Added global auto-approve control through vim.g.mcphub_auto_approve and config.auto_approve
+- Added UI toggle (ga) for auto-approve in main view
+- Added auto-approve support in write_file tool while maintaining editor visibility
+
+### Changed
+
+- Unified auto-approve handling across the plugin
+- Moved auto-approve settings from extensions to core config
+- Updated Avante and CodeCompanion extensions to use global auto-approve setting
+- Updated documentation to reflect new auto-approve configuration
+
+## [4.1.1] - 2025-04-02
+
+### Changed
+
+- Updated mcp-hub dependency to v1.8.1 for the new restart endpoint (fixes #49)
+
+## [4.1.0] - 2025-04-01
+
+### Added
+
+- Added explicit instructions for MCP tool extensions
+  - Improved parameter validation and error messages
+  - Better documentation of required fields
+  - Enhanced type checking for arguments
+
+### Changed
+
+- Changed CodeCompanion show_result_in_chat to false by default
+- Disabled replace_in_file tool in native Neovim server
+
+## [4.0.0] - 2025-04-01
+
+### Added
+
+- Added explicit instructions for MCP tool extensions
+  - Improved parameter validation and error messages
+  - Better documentation of required fields
+  - Enhanced type checking for arguments
+
+### Fixed
+
+- Changed CodeCompanion show_result_in_chat to false by default
+- Disabled replace_in_file tool in native Neovim server
+
+### Added
+
+- Zero Configuration Support
+  - Default port to 37373
+  - Default config path to ~/.config/mcphub/servers.json
+  - Auto-create config file with empty mcpServers object
+  - Works out of the box with just require("mcphub").setup({})
+
+- Installation Improvements
+  - Added bundled installation option for users without global npm access
+  - Added `build = "bundled_build.lua"` alternative
+  - Auto-updates with plugin updates
+  - Flexible cmd and cmdArgs configuration for custom environments
+
+- UI Window Customization
+  - Configurable width and height (ratio, percentage, or raw number)
+  - Border style options
+  - Relative positioning
+  - Z-index control
+
+- Lualine Integration
+  - Dynamic status indicator
+  - Server connection state
+  - Active operation spinner
+  - Total connected servers display
+
+- Native MCP Servers Support
+  - Write once, use everywhere design
+  - Clean chained API for tools and resources
+  - Full URI-based resource system with templates
+  - Centralized lifecycle management
+  - Auto-generate Native MCP servers with LLMs
+
+- Built-in Neovim MCP Server
+  - Common utility tools and resources
+  - Configurable tool enablement
+  - Interactive file operations with diff view
+  - Improved write_file tool with editor integration
+
+- MCP Resources to Chat Variables
+  - Real-time variable updates
+  - CodeCompanion integration
+  - LSP diagnostics support
+
+### Changed
+
+- Enhanced UI features
+  - Added syntax highlighting for config view and markdown text
+  - Added multiline input textarea support with "o" keymap
+  - Improved Hub view with breadcrumb preview
+  - Updated Help view
+
+- Improved Integration Features
+  - Configure auto-approve behavior in Avante
+  - Configure tool call results in CodeCompanion
+  - Enhanced tool and resource handling
+
 ## [3.5.0] - 2025-03-19
 
 ### Added
