@@ -181,7 +181,8 @@ Example: Requesting to access an MCP resource
     )
 end
 
-function M.get_active_servers_prompt(servers)
+function M.get_active_servers_prompt(servers, add_example)
+    add_example = add_example ~= false
     local prompt = get_header()
 
     if not servers or #servers == 0 then
@@ -214,8 +215,34 @@ function M.get_active_servers_prompt(servers)
             prompt = prompt .. "\n\n(No tools or resources available)"
         end
     end
+    local example = [[
 
-    return prompt
+## Examples: 
+
+### `use_mcp_tool`
+
+When you need to call a tool on an MCP Server, use the `use_mcp_tool` tool:
+
+Pseudocode:
+
+use_mcp_tool
+  server_name: string (One of the available server names)
+  tool_name: string (name of the tool in the server to call)
+  tool_input: object (Arguments for the tool call)
+
+### `access_mcp_resource`
+
+When you need to access a resource from a MCP Server, use the `access_mcp_resource` tool:
+
+Pseudocode:
+
+access_mcp_resource
+  server_name: string (One of the available server names)
+  uri: string (uri for the resource)
+
+]]
+
+    return prompt .. (add_example and example or "")
 end
 
 function M.parse_prompt_response(response)

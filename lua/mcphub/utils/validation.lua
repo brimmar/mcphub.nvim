@@ -93,10 +93,45 @@ function M.validate_config_file(path)
     end
     local file = io.open(path, "r")
     if not file then
-        return {
-            ok = false,
-            error = Error("SETUP", Error.Types.SETUP.INVALID_CONFIG, string.format("Config file not found: %s", path)),
-        }
+        -- File doesn't exist or can't be opened for reading.  Attempt to create it with default content.
+        local create_file, create_err = io.open(path, "w")
+
+        if not create_file then
+            -- Creation failed.  Return an error.
+            return {
+                ok = false,
+                error = Error(
+                    "SETUP",
+                    Error.Types.SETUP.INVALID_CONFIG,
+                    string.format("Config file not found or creation failed: %s. Reason: %s", path, create_err or err)
+                ),
+            }
+        else
+            -- Creation succeeded. Write the default config.
+            local default_config = { mcpServers = {} }
+            local json_string = vim.json.encode(default_config) -- Convert to JSON string
+
+            create_file:write(json_string) -- Write the JSON string to the file
+            create_file:close()
+
+            -- Reopen in read mode
+            local read_file, err = io.open(path, "r")
+            file = read_file
+            if not file then
+                return {
+                    ok = false,
+                    error = Error(
+                        "SETUP",
+                        Error.Types.SETUP.INVALID_CONFIG,
+                        string.format(
+                            "Config file created, but could not be opened for reading: %s. Reason: %s",
+                            path,
+                            err
+                        )
+                    ),
+                }
+            end
+        end
     end
 
     local content = file:read("*a")

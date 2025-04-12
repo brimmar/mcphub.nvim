@@ -37,7 +37,7 @@ While many chat plugins have their own tool systems, this leads to limitations:
 Native MCP Servers solve these problems by implementing the Model Context Protocol directly in Neovim:
 
 1. **Complete MCP Implementation**
-   - Full support for MCP tools and resources
+   - Full support for MCP tools, resources, and prompts
    - Standard request/response formats
    - URI-based resource system
    - Compatible with any MCP client
@@ -211,6 +211,38 @@ Native servers use these core types:
 ---@field tools MCPTool[] # List of tools
 ---@field resources MCPResource[] # List of resources
 ---@field resourceTemplates MCPResourceTemplate[] # List of templates
+---@field prompts MCPPrompt[] # List of chat prompts
+```
+
+### Prompt Types
+```lua
+---@class MCPPromptArgument
+---@field name string Argument name
+---@field description? string Argument description
+---@field required? boolean Whether the argument is required
+---@field default? string Default value for the argument
+
+---@class MCPPrompt
+---@field name? string Prompt identifier
+---@field description? string|fun():string Prompt description or function returning description
+---@field arguments? MCPPromptArgument[]|fun():MCPPromptArgument[] List of arguments
+---@field handler fun(req: PromptRequest, res: PromptResponse) Implementation
+
+---@class PromptRequest
+---@field params table # User provided arguments
+---@field prompt MCPPrompt # Prompt definition
+---@field server NativeServer # Server instance
+---@field caller CallerInfo # Caller context
+---@field editor_info EditorInfo # Editor state
+
+---@class PromptResponse
+---@field user fun(): PromptResponse # Start user message
+---@field llm fun(): PromptResponse # Start LLM message
+---@field text fun(content: string): PromptResponse # Add message content
+---@field image fun(data:string,mimeType:string): PromptResponse #Add Image content
+---@field audio fun(data:string,mimeType:string): PromptResponse #Add audio content
+---@field blob fun(data:string,mimeType:string): PromptResponse #Add blob content
+---@field send fun(): table # Send response
 ```
 
 ### Tool Types
@@ -502,6 +534,29 @@ mcphub.add_resource_template("git", {
     return res:text(commits):send()
   end
 })
+
+-- Add a chat prompt
+mcphub.add_prompt("git", {
+  name = "commit_help",
+  description = "Help write a commit message",
+  arguments = {
+    {
+      name = "scope",
+      description = "Commit scope (feat, fix, etc)",
+      type = "string",
+      required = true
+    }
+  },
+  handler = function(req, res)
+    return res
+      :user()
+      :text(string.format("Help me write a %s commit message", req.params.scope))
+      :llm()
+      :text("I'll help you write a commit message. Here's a template:")
+      :text(string.format("%s: ", req.params.scope))
+      :send()
+  end
+})
 ```
 
 ### Instructions for LLM
@@ -512,4 +567,3 @@ mcphub.add_resource_template("git", {
 - Ask the user for any clarification if needed. Do not assume anything about the user's setup.
 - Once you have successfully created the Native MCP Server and set it up in user's configuration, you should advise the user to reload neovim(so that the new configuration is loaded) and test the server in hub ui with `:MCPHub`
 - Unless otherwise specified by the user, you should use the builtin neovim server's tools like `write_file`, `read_file`, `list_directory`, `replace_in_file` etc to complete the setup.
-

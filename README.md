@@ -222,69 +222,63 @@ All options are optional with sensible defaults. Here's a complete example with 
 
 ```lua
 require("mcphub").setup({
-    port = 37373,  -- Default port for MCP Hub
-    config = vim.fn.expand("~/.config/mcphub/servers.json"),  -- Absolute path to config file location (will create if not exists)
+    port = 37373, -- Default port for MCP Hub
+    config = vim.fn.expand("~/.config/mcphub/servers.json"), -- Absolute path to config file location (will create if not exists)
     native_servers = {}, -- add your native servers here
 
-    auto_approve = false, -- Auto approve mcp tool calls 
+    auto_approve = false, -- Auto approve mcp tool calls
     -- Extensions configuration
-	extensions = {
-		avante = {
-		},
-		codecompanion = {
-			-- Show the mcp tool result in the chat buffer
-			-- NOTE:if the result is markdown with headers, content after the headers wont be sent by codecompanion
-			show_result_in_chat = false,
-			make_vars = true, -- make chat #variables from MCP server resources
+    extensions = {
+        avante = {
             make_slash_commands = true, -- make /slash commands from MCP server prompts
-		},
-	},
+        },
+        codecompanion = {
+            -- Show the mcp tool result in the chat buffer
+            -- NOTE:if the result is markdown with headers, content after the headers wont be sent by codecompanion
+            show_result_in_chat = false,
+            make_vars = true, -- make chat #variables from MCP server resources
+            make_slash_commands = true, -- make /slash commands from MCP server prompts
+        },
+    },
 
     -- Default window settings
     ui = {
-      window = {
-        width = 0.8, -- 0-1 (ratio); "50%" (percentage); 50 (raw number)
-        height = 0.8, -- 0-1 (ratio); "50%" (percentage); 50 (raw number)
-        relative = "editor",
-        zindex = 50,
-        border = "rounded", -- "none", "single", "double", "rounded", "solid", "shadow"
-      },
+        window = {
+            width = 0.8, -- 0-1 (ratio); "50%" (percentage); 50 (raw number)
+            height = 0.8, -- 0-1 (ratio); "50%" (percentage); 50 (raw number)
+            relative = "editor",
+            zindex = 50,
+            border = "rounded", -- "none", "single", "double", "rounded", "solid", "shadow"
+        },
+        wo = { -- window-scoped options (vim.wo)
+        },
     },
 
     -- Event callbacks
     on_ready = function(hub)
-      -- Called when hub is ready
+        -- Called when hub is ready
     end,
     on_error = function(err)
-      -- Called on errors
+        -- Called on errors
     end,
 
     --set this to true when using build = "bundled_build.lua"
-    use_bundled_binary = false,  -- Uses bundled mcp-hub instead of global installation
+    use_bundled_binary = false, -- Uses bundled mcp-hub script instead of global installation
 
     --WARN: Use the custom setup if you can't use `npm install -g mcp-hub` or cant have `build = "bundled_build.lua"`
-    -- Custom Server command configuration 
+    -- Custom Server command configuration
     --cmd = "node", -- The command to invoke the MCP Hub Server
     --cmdArgs = {"/path/to/node_modules/mcp-hub/dist/cli.js"},    -- Additional arguments for the command
-
-    -- Common command configurations (when not using bundled binary):
-    -- 1. Global installation (default):
-    --   cmd = "mcp-hub"
-    --   cmdArgs = {}
-    -- 2. Local npm package:
-    --   cmd = "node"
-    --   cmdArgs = {"/path/to/node_modules/mcp-hub/dist/cli.js"}
-    -- 3. Custom binary:
-    --   cmd = "/usr/local/bin/custom-mcp-hub"
-    --   cmdArgs = {"--custom-flag"}
+    -- In cases where mcp-hub server is hosted somewhere, set this to the server URL e.g `http://mydomain.com:customport` or `https://url_without_need_for_port.com`
+    -- server_url = nil, -- defaults to `http://localhost:port`
 
     -- Logging configuration
     log = {
-      level = vim.log.levels.WARN,
-      to_file = false,
-      file_path = nil,
-      prefix = "MCPHub"
-    }
+        level = vim.log.levels.WARN,
+        to_file = false,
+        file_path = nil,
+        prefix = "MCPHub",
+    },
 })
 ```
 </details>
@@ -318,27 +312,26 @@ MCPHub uses a JSON configuration file to define MCP servers. The default locatio
 }
 ```
 
-#### Configuration Options
-
-- `command`: The command to run the server
-- `args`: Command arguments as array
-- `disabled`: Optional boolean to disable server
-- `disabled_tools`: Optional array of tool names to disable
-- `env`: Optional environment variables. Special values:
-  - `""` (empty string): Falls back to process.env.[VAR_NAME]
-  - `null`: Falls back to process.env.[VAR_NAME]
-  - Any other value is used as-is
-- `custom_instructions`: Optional custom instructions for the server
-
-#### Environment Variables
-
-Using empty string ("") or null in the env field provides several benefits:
-- Keep sensitive values like API keys out of version control
-- Use environment variables for deployment-specific settings
-- Override environment variables when needed
-- Share server configurations safely with placeholder values
-
 </details>
+
+##### MCP Servers Config
+
+`mcphub.nvim` supports both `stdio` (local) MCP Servers as well as `sse` (remote) MCP Servers. The configuration for each type is as follows:
+
+* Local Stdio Servers:
+    - `command`: The command to start the MCP server (required)
+    - `args`: Command arguments as array 
+    - `env`: Optional environment variables. Special values:
+      - `""` (empty string): Falls back to process.env.[VAR_NAME]
+      - `null`: Falls back to process.env.[VAR_NAME]
+      - Any other value is used as-is
+
+* Remote SSE Servers:
+    - `url`: url for remote MCP Server (required)
+    - `headers`: Optional headers for the server
+
+* There are other plugin specific options for each server like `disabled`, `disabled_tools`, `custom_instructions` etc which can be easily updated from the UI.
+
 
 
 ## 🚀 Usage
@@ -395,13 +388,19 @@ MCPHub.nvim provides extensions that integrate with popular Neovim chat plugins.
 
 </summary>
 
-Add MCP capabilities to Avante by including the MCP tool in your setup:
+Add MCP capabilities to Avante by including the MCP tools in your setup:
 
-> Set `config.auto_approve = true` or `vim.g.mcphub_auto_approve = true` to automatically approve mcp tool requests. 
+> Set `config.auto_approve = true` or `vim.g.mcphub_auto_approve = true` to automatically approve mcp tool requests.
+
+> Set `config.extensions.avante.make_slash_commands = true` to enable prompts as slash commands (enabled by default).
+Server prompts will be available as `/mcp:server_name:prompt_name` in chat.
+
+The `mcp_tool()` function now returns two separate tools (`use_mcp_tool` and `access_mcp_resource`) for better schema generation:
 
 ```lua
 extensions = {
     avante = {
+        make_slash_commands = true, -- make /slash commands from MCP server prompts
     }
 }
 ```
@@ -459,10 +458,10 @@ Add MCP capabilities to CodeCompanion.
 
 > Set `make_slash_commands = true` to show prompts as /slash_commands in the chat buffer
 
-- Server prompts become available as `/mcp:prompt_name` commands in chat
-- Prompts with arguments  are handled using vim.ui.input 
-- If the last message is of `user` role, it will be added to the chat buffer. 
-- You can create your own prompt just like other capabilities with `mcphub.add_prompt` or by adding a native server to `config.native_server`.
+- Type @mcp in the chat (once submitted, it will add available MCP Servers to the system prompts and adds a tool so that the LLM can call tools, resources on MCP Servers etc)
+- Server prompts become available as `/mcp:prompt_name` slash commands in chat (*Currently very few servers provide prompts, but you can add your own using `mcphub.add_prompt`*)
+- Prompts with arguments are handled using vim.ui.input (cancelling input for required arguments will abort the slash command)
+- If the last message from the `/mcp:prompt_name` message is of `user` role, it will be added to the chat buffer. 
 
 * Whenever the servers are updated, the variables and slash_commands will also be updated in realtime
 ![image](https://github.com/user-attachments/assets/fb04393c-a9da-4704-884b-2810ff69f59a)
@@ -844,7 +843,6 @@ All tools, resources, and templates from the server above are converted into a c
    - Feel free to open an [Issue](https://github.com/ravitemer/mcphub.nvim/issues) for bugs or doubts
    - Create a [Discussion](https://github.com/ravitemer/mcphub.nvim/discussions) for questions, showcase, or feature requests
 
- Note: You can also access the Express server directly at http://localhost:[port]/api
    </details>
 
 <details>
@@ -861,7 +859,7 @@ MCPHub.nvim uses an Express server to manage MCP servers and handle client reque
    - Checks for mcp-hub command installation
    - Verifies version compatibility
    - Starts mcp-hub with provided port and config file
-   - Creates Express server at localhost:[port]
+   - Creates Express server at `http://localhost:[config.port]` or at `config.server_url`
 
 2. After successful setup:
 

@@ -211,7 +211,7 @@ The Model Context Protocol (MCP) enables communication with locally running MCP 
             hub:get_access_mcp_resource_prompt(xml2lua.toXml({
                 tools = { schema[2] },
             })), -- gets the prompt for the access_mcp_resource action
-            hub:get_active_servers_prompt() -- generates prompt from currently running mcp servers
+            hub:get_active_servers_prompt(false) -- generates prompt from currently running mcp servers
         )
     end,
     output = {

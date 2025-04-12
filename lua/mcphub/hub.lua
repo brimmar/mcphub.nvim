@@ -16,6 +16,7 @@ local RESOURCE_TIMEOUT = 30000 -- 30s for resource access
 
 --- @class MCPHub
 --- @field port number The port number for the MCP Hub server
+--- @field server_url string In case of hosting mcp-hub somewhere, the url with `https://mydomain.com:5858`
 --- @field config string Path to the MCP servers configuration file
 --- @field cmd string The cmd to invoke the MCP Hub server
 --- @field cmdArgs table The args to pass to the cmd to spawn the server
@@ -35,6 +36,7 @@ function MCPHub:new(opts)
 
     -- Set up instance fields
     self.port = opts.port
+    self.server_url = opts.server_url
     self.config = opts.config
     self.cmd = opts.cmd
     self.cmdArgs = opts.cmdArgs
@@ -92,8 +94,16 @@ function MCPHub:start(opts, restart_callback)
 
         self.server_job = Job:new({
             command = self.cmd,
-            args = utils.clean_args({ self.cmdArgs, "--port", tostring(self.port), "--config", self.config }),
-            detached = true,
+            args = utils.clean_args({
+                self.cmdArgs,
+                "--port",
+                tostring(self.port),
+                "--config",
+                self.config,
+                "--auto-shutdown",
+            }),
+            -- detached = true,
+            hide = true,
             on_stdout = vim.schedule_wrap(function(_, data)
                 if has_called_restart_callback == false then
                     if restart_callback then
@@ -269,6 +279,7 @@ function MCPHub:start_mcp_server(name, opts)
         State:notify_subscribers({
             server_state = true,
         }, "server")
+        self:handle_servers_updated()
     else
         -- First update state to show connecting
         if self:is_ready() then
@@ -330,6 +341,7 @@ function MCPHub:stop_mcp_server(name, disable, opts)
         State:notify_subscribers({
             server_state = true,
         }, "server")
+        self:handle_servers_updated()
     else
         -- First update state to show disconnecting
         if self:is_ready() then
@@ -597,9 +609,13 @@ end
 function MCPHub:api_request(method, path, opts)
     opts = opts or {}
     local callback = opts.callback
+    -- the url of the mcp-hub server if it is hosted somewhere (e.g. https://mydomain.com)
+    local base_url = self.server_url or string.format("http://localhost:%d", self.port)
+    --remove any trailing slashes
+    base_url = base_url:gsub("/+$", "")
 
     -- Build URL with query parameters if any
-    local url = string.format("http://localhost:%d/api/%s", self.port, path)
+    local url = string.format("%s/api/%s", base_url, path)
     if opts.query then
         local params = {}
         for k, v in pairs(opts.query) do
@@ -719,7 +735,6 @@ function MCPHub:handle_servers_updated()
     self:emit_update()
     -- Emit server update event with prompt
     State:emit("servers_updated", {
-        prompt = self:get_active_servers_prompt(),
         hub = self,
     })
 end
@@ -1066,11 +1081,11 @@ function MCPHub:get_tools()
     return tools
 end
 
-function MCPHub:get_active_servers_prompt()
+function MCPHub:get_active_servers_prompt(add_example)
     if not self:is_ready() then
         return ""
     end
-    return prompt_utils.get_active_servers_prompt(self:get_servers())
+    return prompt_utils.get_active_servers_prompt(self:get_servers(), add_example)
 end
 
 function MCPHub:get_use_mcp_tool_prompt(opts)
@@ -1092,7 +1107,7 @@ function MCPHub:get_state()
 end
 
 --- Get all MCP system prompts
----@param opts? {use_mcp_tool_example?: string, access_mcp_resource_example?: string}
+---@param opts? {use_mcp_tool_example?: string, add_example?: boolean, access_mcp_resource_example?: string}
 ---@return {active_servers: string|nil, use_mcp_tool: string|nil, access_mcp_resource: string|nil}
 function MCPHub:generate_prompts(opts)
     if not self:ensure_ready() then
@@ -1100,7 +1115,7 @@ function MCPHub:generate_prompts(opts)
     end
     opts = opts or {}
     return {
-        active_servers = self:get_active_servers_prompt(),
+        active_servers = self:get_active_servers_prompt(opts.add_example),
         use_mcp_tool = prompt_utils.get_use_mcp_tool_prompt(opts.use_mcp_tool_example),
         access_mcp_resource = prompt_utils.get_access_mcp_resource_prompt(opts.access_mcp_resource_example),
     }
@@ -1188,7 +1203,7 @@ function MCPHub:get_marketplace_server_details(mcpId, opts)
                     { mcpId = mcpId, error = err }
                 )
                 State:add_error(market_err)
-                -- Keep server details as nil to indicate error state
+            -- Keep server details as nil to indicate error state
             else
                 -- Update state with new details
                 State:update({
